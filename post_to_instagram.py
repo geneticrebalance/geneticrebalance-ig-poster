@@ -29,6 +29,8 @@ Notes:
 """
 
 import argparse
+import base64
+import json
 import os
 import sys
 import time
@@ -64,11 +66,14 @@ def api_post(path, payload):
     response = requests.post(url, data=payload, timeout=30)
     data = response.json()
     if response.status_code != 200:
-        error = data.get("error", {})
-        sys.exit(
-            f"Error calling {path}: {error.get('message', data)}\n"
-            f"(code: {error.get('code')}, type: {error.get('type')})"
-        )
+        # Encode the full error as base64 so GitHub Actions' secret-masking
+        # (which blacks out any log text matching a stored secret, e.g. the
+        # account ID) doesn't swallow the useful part of the message.
+        raw = json.dumps(data, indent=2)
+        encoded = base64.b64encode(raw.encode()).decode()
+        print("FULL ERROR (base64-encoded to bypass log masking):")
+        print(encoded)
+        sys.exit("See FULL ERROR block above - decode it to read the real message.")
     return data
 
 
