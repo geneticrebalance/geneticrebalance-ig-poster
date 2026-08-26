@@ -1,0 +1,42 @@
+name: Post to Instagram
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_urls:
+        description: "Image URL(s), comma-separated. One URL = single post. 2+ URLs = carousel."
+        required: true
+        type: string
+      caption:
+        description: "Caption text for the post"
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Post to Instagram
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_ACCOUNT_ID: ${{ secrets.IG_ACCOUNT_ID }}
+        run: |
+          IFS=',' read -ra URLS <<< "${{ inputs.image_urls }}"
+          ARGS=()
+          for url in "${URLS[@]}"; do
+            trimmed="$(echo "$url" | xargs)"
+            ARGS+=(--image-url "$trimmed")
+          done
+          python post_to_instagram.py "${ARGS[@]}" --caption "${{ inputs.caption }}"
