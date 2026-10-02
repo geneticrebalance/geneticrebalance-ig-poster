@@ -18,12 +18,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -32,11 +32,13 @@ jobs:
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_ACCOUNT_ID: ${{ secrets.IG_ACCOUNT_ID }}
+          IMAGE_URLS: ${{ inputs.image_urls }}
+          CAPTION: ${{ inputs.caption }}
         run: |
-          IFS=',' read -ra URLS <<< "${{ inputs.image_urls }}"
+          IFS=',' read -ra URLS <<< "$IMAGE_URLS"
           ARGS=()
           for url in "${URLS[@]}"; do
             trimmed="$(echo "$url" | xargs)"
             ARGS+=(--image-url "$trimmed")
           done
-          python post_to_instagram.py "${ARGS[@]}" --caption "${{ inputs.caption }}"
+          python post_to_instagram.py "${ARGS[@]}" --caption "$CAPTION"
